@@ -1,0 +1,10 @@
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+path.leaflet-interactive {
+    transition: opacity 300ms, stroke-width 100ms;
+}
+
