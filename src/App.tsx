@@ -1,16 +1,17 @@
-import { Icon, Marker as LeafletMarker, Util, type LatLngBoundsExpression } from "leaflet"
+import { DivIcon, Icon, Marker as LeafletMarker, Util, type LatLngBoundsExpression, DomUtil, type LatLngTuple } from "leaflet"
 import { useEffect, useRef, useState } from "react"
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap  } from "react-leaflet"
-import { destinations, routes, types, type Route } from "./data/route"
+import { destinations, routes, destinationTypes, type Route } from "./data/route"
 
-const carIcon = new Icon({
-    iconUrl: '/car.svg',
+const defaultMarker = new DivIcon({
+    className: `marker`,
+    html: `<span class="material-symbols-rounded"></span>`,
     iconSize: [32, 32],
-    iconAnchor: [16,16],
-    popupAnchor: [0,-16]
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -40],
 })
 
-const CAR_SPEED: number = 3
+const CAR_SPEED: number = 10
 const FPS: number = 30
 
 const requiredDelta = 1000 / FPS
@@ -32,12 +33,14 @@ function getSegmentDistance(pa: [number, number], pb: [number, number]) {
     return Math.sqrt(a * a + b * b)
 }
 
-function MapContents({ typeFilter }: { typeFilter: string }) {
+function MovingCar() {
+    const map = useMap()
+    map.doubleClickZoom.disable()
+
     const car = useRef<LeafletMarker>(new LeafletMarker([0,0]))
     const [carPosition, setCarPosition] = useState<[number, number]>([0, 0])
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [running, setRunning] = useState<boolean>(true)
+    const running = useRef<boolean>(true)
     const routeIndex = useRef<number>(0)
 
     const direction = useRef<number>(1)
@@ -49,17 +52,18 @@ function MapContents({ typeFilter }: { typeFilter: string }) {
 
     const [highlighted, setHighlighted] = useState(0)
 
-    const map = useMap()
+    const carIcon = new Icon({
+        iconUrl: '/car.svg',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -16]
+    })
 
     function getCurrentRoute() {
         return routes[routeIndex.current]
     }
 
-    useEffect(() => {
-        map.addEventListener('mousedown', (e) => {
-            console.log(e.latlng)
-        })
-
+    function startCar() {
         function animate(elapsed: number) {
             const dt = elapsed - lastTime.current
             if (dt === 0) {
@@ -119,18 +123,26 @@ function MapContents({ typeFilter }: { typeFilter: string }) {
                 }
             }
 
-
-            if (running) {
+            if (running.current) {
                 Util.requestAnimFrame(animate)
             }
         }
 
-        map.setMaxBounds(map.getBounds())
-
-        if (running) {
+        if (running.current) {
             Util.requestAnimFrame(animate)
         }
-    }, [map, running])
+    }
+
+    function toggleCar() {
+        if (running.current) {
+            running.current = false
+        } else {
+            running.current = true
+            startCar()
+        }
+    }
+
+    useEffect(startCar, [])
 
     function setRoute(index: number) {
         if (index === routeIndex.current) return
@@ -149,28 +161,47 @@ function MapContents({ typeFilter }: { typeFilter: string }) {
     }
 
     return (<>
-        <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
-            subdomains="ab"
-        />
-        {destinations.map((v) => (typeFilter === v.type || !typeFilter) &&
-            <Marker position={[v.lat, v.lng]} key={v.name}>
-                <Popup>
-                    {v.name}
-                </Popup>
-            </Marker>
-        )}
-        <Marker position={carPosition} icon={carIcon} ref={car} attribution='<a href="https://www.svgrepo.com/svg/452176/car">Colored Interface And Logo Icons Collection</a>, Paths using <a href="https://www.graphhopper.com/">GraphHopper</a>'>
+        <Marker position={carPosition} icon={carIcon} ref={car} attribution='<a href="https://www.svgrepo.com/svg/452176/car">Colored Interface And Logo Icons Collection</a>, Paths using <a href="https://www.graphhopper.com/">GraphHopper</a>' eventHandlers={{ popupopen: toggleCar, popupclose: toggleCar }}>
             <Popup>
-                car
+                Taxi Car
             </Popup>
         </Marker>
         <RoutesDisplay routes={routes} setRoute={setRoute} highlighted={highlighted} />
     </>)
 }
 
+function DestinationMarkers() {
+    const typeIcons: Map<string, DivIcon> = new Map()
+
+    for (const type of destinationTypes) {
+        if (type.icon) {
+            typeIcons.set(type.id, new DivIcon({
+                className: `marker marker-${type.id}`,
+                html: `<span class="material-symbols-rounded"><span>${type.icon}</span></span>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -40],
+            }))
+        }
+    }
+
+    return <>
+        {destinations.map((v) => 
+            <Marker position={[v.lat, v.lng]} icon={typeIcons.get(destinationTypes[v.type].id) ?? defaultMarker} key={v.name}>
+                <Popup>
+                    <h1>{v.name}</h1>
+                    <p>{destinationTypes[v.type].name}</p>
+                </Popup>
+            </Marker>
+        )}
+    </>
+}
+
 function RoutesDisplay({ routes, setRoute, highlighted }: { routes: Route[], highlighted: number, setRoute: (index: number) => void }) {
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    window.leafletMap = useMap()
     return (<>{routes.map((route, i) =>
         <RoutePolyline key={i} route={route} routeIndex={i} setRoute={setRoute} currentRouteIndex={highlighted} />)}</>)
 }
@@ -193,28 +224,64 @@ function RoutePolyline({ currentRouteIndex, setRoute, routeIndex, route }: { rou
 
 function App() {
     const maxMapBounds: LatLngBoundsExpression = [
-        [-6.205, 106.78],
-        [-6.237, 106.82],
+        [-6.188854026387887, 106.84830665588379],
+        [-6.2511415806683095, 106.76178932189941],
     ]
 
-    const [typeFilter, setTypeFilter] = useState('')
+    const centerMap: LatLngTuple = [
+        (maxMapBounds[0][0] + maxMapBounds[1][0]) * 0.5,
+        (maxMapBounds[0][1] + maxMapBounds[1][1]) * 0.5
+    ]
+
+    const [typeFilter, setTypeFilter] = useState<number | undefined>(undefined)
+
+    useEffect(() => {
+        const markerPane = document.querySelector<HTMLSpanElement>('.leaflet-marker-pane.leaflet-pane')
+
+        if (!markerPane) {
+            return
+        }
+
+        for (const className of Array.from(markerPane.classList.values()).filter(c => c.startsWith('marker-filter-'))) {
+            DomUtil.removeClass(markerPane, className)
+        }
+
+        if (typeFilter !== undefined) {
+            const type = destinationTypes[typeFilter]
+
+            console.log(type)
+
+            if (!markerPane.classList.contains('marker-filter')) DomUtil.addClass(markerPane, 'marker-filter')
+
+            DomUtil.addClass(markerPane, 'marker-filter-' + type.id)
+        } else {
+            DomUtil.removeClass(markerPane, 'marker-filter')
+        }
+    }, [typeFilter])
+
 
     return (
         <div style={{ height: '100vh' }}>
             <MapContainer 
-                center={[-6.2212, 106.79897508908876]} 
+                center={centerMap} 
                 maxBounds={maxMapBounds}
-                minZoom={16} maxZoom={18} zoomControl={false}
+                minZoom={14} maxZoom={18} zoomControl={false}
                 zoom={16}
-                style={{height: '100%'}}
+                style={{height: '100vh'}}
             >
-                <MapContents typeFilter={typeFilter} />
+                <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
+                    subdomains="ab"
+                />
+                <MovingCar />
+                <DestinationMarkers />
             </MapContainer>
             <div className="filters" role="listbox">
-                {types.map((type) => 
-                    <button role="option" type="button" key={type} onClick={() => {
-                        setTypeFilter(typeFilter === type ? '' : type)
-                    }} aria-selected={typeFilter === type}>{type}</button>
+                {destinationTypes.map((type, i) => 
+                    <button role="option" type="button" key={i} onClick={() => {
+                        setTypeFilter(typeFilter === i ? undefined : i)
+                    }} aria-selected={typeFilter === i}>{type.name}</button>
                 )}
             </div>
         </div>
