@@ -1,7 +1,7 @@
 import { Icon, Marker as LeafletMarker, Util, type LatLngBoundsExpression } from "leaflet"
 import { useEffect, useRef, useState } from "react"
-import { MapContainer, Marker, Polyline, Popup, TileLayer  } from "react-leaflet"
-import { destinations, routes, type Route } from "./data/route"
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap  } from "react-leaflet"
+import { destinations, routes, types, type Route } from "./data/route"
 
 const carIcon = new Icon({
     iconUrl: '/car.svg',
@@ -10,7 +10,7 @@ const carIcon = new Icon({
     popupAnchor: [0,-16]
 })
 
-const CAR_SPEED: number = 8
+const CAR_SPEED: number = 3
 const FPS: number = 30
 
 const requiredDelta = 1000 / FPS
@@ -32,14 +32,15 @@ function getSegmentDistance(pa: [number, number], pb: [number, number]) {
     return Math.sqrt(a * a + b * b)
 }
 
-function MapContents() {
+function MapContents({ typeFilter }: { typeFilter: string }) {
     const car = useRef<LeafletMarker>(new LeafletMarker([0,0]))
     const [carPosition, setCarPosition] = useState<[number, number]>([0, 0])
 
-    const running = useRef<boolean>(true)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [running, setRunning] = useState<boolean>(true)
     const routeIndex = useRef<number>(0)
 
-    const direction = useRef<number>(-1)
+    const direction = useRef<number>(1)
 
     const nodeIndex = useRef<number>(0)
     const nodeT = useRef<number>(0)
@@ -48,11 +49,17 @@ function MapContents() {
 
     const [highlighted, setHighlighted] = useState(0)
 
+    const map = useMap()
+
     function getCurrentRoute() {
         return routes[routeIndex.current]
     }
 
     useEffect(() => {
+        map.addEventListener('mousedown', (e) => {
+            console.log(e.latlng)
+        })
+
         function animate(elapsed: number) {
             const dt = elapsed - lastTime.current
             if (dt === 0) {
@@ -118,10 +125,12 @@ function MapContents() {
             }
         }
 
+        map.setMaxBounds(map.getBounds())
+
         if (running) {
             Util.requestAnimFrame(animate)
         }
-    }, [running])
+    }, [map, running])
 
     function setRoute(index: number) {
         if (index === routeIndex.current) return
@@ -131,7 +140,7 @@ function MapContents() {
 
         if (index === 0) {
             direction.current = 1
-        } else {
+        } else if (index + 1 === routes.length) {
             direction.current = -1
         }
 
@@ -145,7 +154,7 @@ function MapContents() {
             url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
             subdomains="ab"
         />
-        {destinations.map((v) => 
+        {destinations.map((v) => (typeFilter === v.type || !typeFilter) &&
             <Marker position={[v.lat, v.lng]} key={v.name}>
                 <Popup>
                     {v.name}
@@ -170,10 +179,10 @@ function RoutePolyline({ currentRouteIndex, setRoute, routeIndex, route }: { rou
     const [hovered, setHovered] = useState(false)
 
     return (
-        <Polyline positions={route.nodes} smoothFactor={0.5} pathOptions={{
+        <Polyline positions={route.nodes} smoothFactor={0.1} pathOptions={{
             lineCap: 'round',
             weight: hovered ? 6 : 4,
-            color: currentRouteIndex === routeIndex ? '#0080ff' : '#888888'
+            color: currentRouteIndex === routeIndex ? '#0080ff' : hovered ? '#777777' : '#888888'
         }} eventHandlers={{
             click: () => setRoute(routeIndex),
             mouseover: () => setHovered(true),
@@ -188,17 +197,26 @@ function App() {
         [-6.237, 106.82],
     ]
 
+    const [typeFilter, setTypeFilter] = useState('')
+
     return (
-        <div style={{height: '100vh'}}>
+        <div style={{ height: '100vh' }}>
             <MapContainer 
                 center={[-6.2212, 106.79897508908876]} 
-                maxBounds={maxMapBounds} maxBoundsViscosity={1}
-                minZoom={15} maxZoom={18} zoomControl={true}
-                zoom={16} scrollWheelZoom={true}
+                maxBounds={maxMapBounds}
+                minZoom={16} maxZoom={18} zoomControl={false}
+                zoom={16}
                 style={{height: '100%'}}
             >
-                <MapContents />
+                <MapContents typeFilter={typeFilter} />
             </MapContainer>
+            <div className="filters" role="listbox">
+                {types.map((type) => 
+                    <button role="option" type="button" key={type} onClick={() => {
+                        setTypeFilter(typeFilter === type ? '' : type)
+                    }} aria-selected={typeFilter === type}>{type}</button>
+                )}
+            </div>
         </div>
     )
 }

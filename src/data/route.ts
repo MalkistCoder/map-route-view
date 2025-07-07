@@ -3,7 +3,8 @@ import type { LatLngBoundsExpression } from "leaflet"
 export type RouteDestination = {
     lat: number,
     lng: number,
-    name: string
+    name: string,
+    type: string
 }
 
 export type Route = {
@@ -19,23 +20,34 @@ function switcharoo(lng: number, lat: number): [number, number] {
     return [lat, lng]
 }
 
-export const destinations = [
+export const destinations: RouteDestination[] = [
     {
         lat: -6.2277027,
-        lng: 106.7980955,
-        name: "Senayan City"
+        lng: 106.7972,
+        name: "Senayan City",
+        type: "Landmark"
     },
     {
         lat: -6.225582,
-        lng: 106.800502,
-        name: "Plaza Senayan"
+        lng: 106.7999,
+        name: "Plaza Senayan",
+        type: "Landmark"
     },
     {
         lat: -6.218548,
-        lng: 106.798560,
-        name: "GBK Arena"
+        lng: 106.80002,
+        name: "GBK Arena",
+        type: "Landmark"
+    },
+    {
+        lat: -6.2244341367394584,
+        lng: 106.79889595715424,
+        name: "Starbucks",
+        type: "Food and Drink"
     }
 ]
+
+export const types: string[] = Array.from(new Set(destinations.map((dest) => dest.type)))
 
 export const routes: Route[] = [
     {

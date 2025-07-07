@@ -4,7 +4,61 @@
     box-sizing: border-box;
 }
 
-path.leaflet-interactive {
-    transition: opacity 300ms, stroke-width 100ms;
+body {
+    font-family: "Plus Jakarta Sans", sans-serif;
 }
 
+button {
+    background-color: transparent;
+    border: none;
+    margin: 0;
+    padding: 0;
+    text-align: inherit;
+    font: inherit;
+    border-radius: 0;
+    appearance: none; /* Just in case we missed anything. */
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: not-allowed;
+}
+
+.leaflet-container {
+    height: 100vh;
+    z-index: 0;
+}
+
+.leaflet-overlay-pane path.leaflet-interactive {
+    transition: stroke 200ms, stroke-width 200ms;
+}
+
+.filters {
+    display: flex;
+    
+    position: absolute;
+    top: 2rem;
+    left: 2rem;
+
+    flex-flow: row nowrap;
+    gap: 1rem;
+    
+    z-index: 50;
+}
+
+.filters button {
+    padding: 0 .5rem;
+    
+    background-color: white;
+    font-size: 1.5rem;
+    
+    border: 1px solid black;
+    border-radius: .5rem;
+
+    transition: all 200ms;
+}
+
+.filters button[aria-selected="true"] {
+    background-color: black;
+    color: white;
+}
