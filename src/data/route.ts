@@ -2,7 +2,9 @@ export type RouteDestination = {
     lat: number,
     lng: number,
     name: string,
-    type: number
+    type: number,
+    imageUrl?: string,
+    description?: string[]
 }
 
 export type DestinationType = {
@@ -28,19 +30,22 @@ export const destinations: RouteDestination[] = [
         lat: -6.2277027,
         lng: 106.7972,
         name: "Senayan City",
-        type: 0
+        type: 0,
+        imageUrl: "https://www.kemangvillage.co.id/wp-content/uploads/2023/08/Mall-Senayan-City-Jakarta-Pusat-Daftar-Tenant.jpg"
     },
     {
         lat: -6.225582,
         lng: 106.7999,
         name: "Plaza Senayan",
-        type: 0
+        type: 0,
+        description: ["Plaza Senayan is a mall nearby Senayan City"]
     },
     {
         lat: -6.218537041333164,
         lng: 106.80004427692597,
         name: "GBK Arena",
-        type: 2
+        type: 2,
+        imageUrl: "https://gbk.id/upload/1706593101-Outdoor.webp"
     },
     {
         lat: -6.2244341367394584,
@@ -71,6 +76,11 @@ export const destinations: RouteDestination[] = [
         lng: 106.8075478076935,
         name: "Jakarta Convention Center",
         type: 0
+    },
+    {
+        lat: -6.2256281, lng: 106.8025671,
+        name: "Perpustakaan",
+        type: 4
     }
 ]
 
@@ -94,6 +104,11 @@ export const destinationTypes: DestinationType[] = [
         name: "Hotel",
         id: "hotel",
         icon: "hotel"
+    },
+    {
+        name: "Education",
+        id: "education",
+        icon: "book_ribbon"
     }
 ]
 

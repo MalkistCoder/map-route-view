@@ -25,8 +25,100 @@ button:disabled {
     cursor: not-allowed;
 }
 
-.leaflet-container {
+main {
+    --popup-size: 0rem;
+
+    display: grid;
+    grid-template-columns: var(--popup-size) 1fr;
+
+    width: 100%;
     height: 100vh;
+    position: relative;
+
+    transition: grid-template-columns 300ms;
+}
+
+main:has(aside.active) {
+    --popup-size: 24rem;
+}
+
+aside {
+    display: flex;
+    flex-flow: column nowrap;
+    width: 24rem;
+
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 24rem;
+    overflow: hidden;
+
+    position: relative;
+}
+
+aside .popup-close {
+    top: 0;
+    right: 0;
+    color: black;
+    font-size: 32px;
+
+    translate: 8px -8px;
+}
+
+aside > img {
+    width: 100%;
+    height: 16rem;
+    object-fit: cover;
+}
+
+aside .popup-content-container {
+    overflow-y: scroll;
+    position: relative;
+}
+
+aside .popup-content {
+    display: flex;
+    flex-flow: column nowrap;
+    gap: 0.5rem;
+    padding: 1rem;
+    padding-top: .25rem;
+
+    line-height: 1.5;
+}
+
+aside .popup-content-container > hgroup {
+    display: flex;
+
+    align-items: start;
+    justify-content: space-between;
+    
+    position: sticky;
+    top: 0;
+    
+    width: 100%;
+    padding: 1rem;
+    backdrop-filter: blur(.25rem);
+    border-radius: 0 0 1rem 1rem;
+}
+
+aside .popup-content-container > hgroup > h1 {
+    line-height: 1;
+    font-size: 1.75rem;
+}
+
+aside .popup-content-container > hgroup > div {
+    display: flex;
+    flex-direction: column;
+}
+
+.map-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.leaflet-container {
+    height: 100%;
+    width: 100%;
     z-index: 0;
 }
 
@@ -43,6 +135,8 @@ button:disabled {
 
     flex-flow: row nowrap;
     gap: 1rem;
+
+    font-weight: bold;
     
     z-index: 50;
 }
@@ -50,18 +144,29 @@ button:disabled {
 .filters button {
     padding: .5rem 1rem;
     
-    background-color: white;
+    background-color: #ffffff80;
     font-size: 1.25rem;
     
-    border: 2px solid black;
     border-radius: .5rem;
 
     transition: all 200ms;
+
+    backdrop-filter: blur(5px);
+
+    transition: background-color 300ms, color 300ms;
+}
+
+.filters button:hover {
+    background-color: #ffffffc0;
 }
 
 .filters button[aria-selected="true"] {
-    background-color: black;
+    background-color: #000000ff;
     color: white;
+}
+
+.filters button[aria-selected="true"]:hover {
+    background-color: #000000c0;
 }
 
 .marker > span {
@@ -105,6 +210,10 @@ button:disabled {
     background-color: goldenrod;
 }
 
+.marker-education > span {
+    background-color: rgb(200, 17, 200);
+}
+
 .marker-filter .marker > span {
     display: none
 }
@@ -112,12 +221,13 @@ button:disabled {
 .marker-filter-shopping .marker-shopping > span,
 .marker-filter-food .marker-food > span,
 .marker-filter-exercise .marker-exercise > span,
-.marker-filter-hotel .marker-hotel > span
+.marker-filter-hotel .marker-hotel > span,
+.marker-filter-education .marker-education > span
 {
     display: flex;
 
     animation-name: grow-bigger;
-    scale: 2;
+    scale: 1.5;
 }
 
 @keyframes grow {
@@ -145,7 +255,8 @@ button:disabled {
 }
 
 .leaflet-popup-content-wrapper {
-    border: 2px solid black;
+    background-color: #ffffff80;
+    backdrop-filter: blur(.25rem);
     box-shadow: none;
     border-radius: 0.5rem;
 }
